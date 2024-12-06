@@ -1,7 +1,7 @@
 #PROJETO PROGRAMAÇÃO
 
 import json
-import matplotlib
+import matplotlib.pyplot as matp
 
 Paper_file = []
 
@@ -52,10 +52,12 @@ def editarPaper(titulo, title, abstract, keywords, authors, data):
                 numauth -= 1
                 Paper_file[Paper_file.index(artigo)]["authors"].append(autores)
         elif resposta == "r":
-            removido = int(input(f"{print(Paper_file[Paper_file.index(artigo)]["authors"])}, qual o número do autor que pretende remover? (1-x)"))
+            print(Paper_file[Paper_file.index(artigo)]["authors"])
+            removido = int(input("Qual o número do autor que pretende remover? (1-x)"))
             Paper_file[Paper_file.index(artigo)]["authors"].remove(Paper_file[Paper_file.index(artigo)]["authors"][removido - 1])
         elif resposta == "e":
-            alterado = int(input(f"{print(Paper_file[Paper_file.index(artigo)]["authors"])}, qual o número do autor que pretende alterar? (1-x)"))
+            print(Paper_file[Paper_file.index(artigo)]["authors"])
+            alterado = int(input("qual o número do autor que pretende alterar? (1-x)"))
             modo = input("Pretende alterar o nome, a afiliação, ou ambos? (1,2,3)")
             if modo == "1":
                 novonome = input("Escolha um novo nome!")
@@ -92,7 +94,7 @@ def searchPaper(resposta):
         data = input("Insira uma data para pesquisar!" )
         for i in Paper_file:  
             if "publish_date" in i:
-                if i["publish_date"] == data:
+                if data in i["publish_date"]: 
                     listapesquisa.append(i)
     elif resposta == "4":
         author = input("Insira um autor para pesquisar!" )  
@@ -170,8 +172,105 @@ def listarkeywords(resposta):
 
         return listasimplificada
     
-    
+def graph():
+    print("""Escolha um gráfico para visualizar:
+1) Gráfico de publicações por ano
+2) Gráfico de publicações por mês, num ano
+3) Gráfico de publicações por autor (Top 20)
+4) Gráfico de publicações de um autor ao longo dos anos
+5) Gráfico de ocorrências de palavras-chave (Top 20)""")
+    resposta = input("Que gráfico pretende construir?")
 
+    if resposta == "1":
+        listdatas = {}
+        for i in Paper_file:
+            if "publish_date" in i:
+                x = i["publish_date"]
+                if x[0:4] not in listdatas:
+                    listdatas[x[0:4]] = 1
+                else:
+                    listdatas[x[0:4]] += 1
+        matp.title("Distribuição de artigos por ano")
+        matp.xlabel("ANOS")
+        matp.ylabel("Publicações")
+        listaordenada = sorted(listdatas.items(), key = lambda param: param[0])
+        datas = [i[0] for i in listaordenada]
+        Publicações = [int(i[1]) for i in listaordenada]
+        matp.plot(datas, Publicações, label = "Nº de Artigos", color = "b", marker = "o")
+        matp.legend()
+        matp.show()
+
+    if resposta == "2":
+        listdatas = {}
+        ano = input("Que ano deseja visualizar?")
+        for i in Paper_file:
+            if "publish_date" in i:
+                x = i["publish_date"]
+                if x[0:4] == ano and x[5:7] not in listdatas:
+                    listdatas[x[5:7]] = 1
+                elif x[0:4] == ano:
+                    listdatas[x[5:7]] += 1
+        matp.title("Distribuição de artigos num ano")
+        matp.xlabel("MESES")
+        matp.ylabel("Publicações")
+        listaordenada = sorted(listdatas.items(), key = lambda param: param[0])
+        autores = [i[0] for i in listaordenada]
+        Publicações = [int(i[1]) for i in listaordenada]
+        matp.plot(autores, Publicações, label = "Nº de Artigos", color = "r", marker = "o")
+        matp.legend()
+        matp.show()
+    
+    if resposta == "3":
+        listatop = listarauth("1")
+        listatop20 = listatop[:20]
+        matp.title("Distribuição de artigos por autor (Top 20)")
+        matp.xlabel("Autor")
+        matp.ylabel("Publicações")
+        listaordenada = sorted(listatop20, key = lambda param: param[1])
+        datas = [i[0] for i in listaordenada]
+        Publicações = [int(i[1]) for i in listaordenada]
+        matp.plot(datas, Publicações, label = "Nº de Artigos", color = "r", marker = "o")
+        matp.legend()
+        matp.show()
+
+    if resposta == "4":
+        listinha = searchPaper("4")
+        listdatas = {}
+        for i in listinha:
+            if "publish_date" in i:
+                x = i["publish_date"]
+                if x[0:4] not in listdatas:
+                    listdatas[x[0:4]] = 1
+                    print(x[0:4])
+                else:
+                    listdatas[x[0:4]] += 1
+        matp.title("Distribuição de artigos por ano")
+        matp.xlabel("ANOS")
+        matp.ylabel("Publicações")
+        listaordenada = sorted(listdatas.items(), key = lambda param: param[0])
+        datas = [i[0] for i in listaordenada]
+        Publicações = [int(i[1]) for i in listaordenada]
+        matp.plot(datas, Publicações, label = "Nº de Artigos", color = "b", marker = "o")
+        matp.legend()
+        matp.show()
+
+    if resposta == "5":
+        listinha = listarkeywords("1")[:20]
+        matp.title("Distribuição de ocorrências de palavras-chave")
+        matp.xlabel("Palavras-chave")
+        matp.ylabel("Publicações")
+        listinha.reverse()
+        print (listinha)
+        keys = [i[0] for i in listinha]
+        Publicações = [int(i[1]) for i in listinha]
+        matp.plot(keys, Publicações, label = "Nº de Artigos", color = "b", marker = "o")
+        matp.legend()
+        matp.show()
+
+    if resposta == "6":
+        searchPaper("3")
+    
+graph()
 
         
 
