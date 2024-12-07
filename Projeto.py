@@ -332,20 +332,7 @@ def graph():
         for i in listaanos.items():
             print (i)
 
-def guardarFicheiro(nome):
-    with open(nome, "w", encoding = "utf-8") as file:
-        file = Paper_file
-    return "nice :)"
 
-#Como deixar o utilizador alterar o ficheiro raiz? Começar em "wr" ou "r+" ???
-#Como deixar o utilizador escolher que ficheiro utiliza para as operações, se tiver mais de um aberto? Reestruturar codigo, tendo como argumento de todas as funções a especificaçãao de que ficheiro se quer usar?
-#Exportar para um novo ficheiro
-
-def guardarPesquisa(nome, param):
-    with open(nome, "w", encoding = "utf-8") as file:
-        file = param
-        return file
-        
 graph()
 graph()
 graph()
