@@ -6,11 +6,35 @@ import matplotlib.pyplot as matp
 Paper_file = []
 
 def carregaFicheiro(nome):
-    with open(nome, "r", encoding = "utf-8") as file:
-        ficheiro = json.load(file)
-    return ficheiro
-
+    try:
+        with open(nome, "r", encoding="utf-8") as file:
+            ficheiro = json.load(file)
+        print(f"Ficheiro '{nome}' carregado com sucesso!")
+        return ficheiro
+    except FileNotFoundError:
+        print(f"Ficheiro '{nome}' não encontrado.")
+        return []
+    except json.JSONDecodeError:
+        print(f"Ficheiro '{nome}' não é um JSON válido.")
+        return []
+    
 Paper_file = carregaFicheiro("ata_medica_papers.json")
+    
+def guardaFicheiro(nome, dados):
+    try:
+        with open(nome, "w", encoding="utf-8") as file:
+            json.dump(dados, file, ensure_ascii=False, indent=4)
+        print(f"Ficheiro '{nome}' guardado com sucesso!")
+    except Exception as e:
+        print(f"Erro a guardar ficheiro '{nome}': {e}")
+
+def exportSearch(nome, dados):
+    try:
+        with open(nome, "w", encoding="utf-8") as file:
+            json.dump(dados, file, ensure_ascii=False, indent=4)
+        print(f"Resultados de pesquisa exportados para o ficheiro '{nome}'!")
+    except Exception as e:
+        print(f"Erro a exportar resultados de pesquisa para '{nome}': {e}")
 
 def insPaper(abstract, keywords, autores, link1, pdf, data, title, link2):
     Paper = {"abstract": abstract,
@@ -84,18 +108,22 @@ def searchPaper(resposta):
             if "title" in i:
                 if i["title"] == title:
                     listapesquisa.append(i)
+
     elif resposta == "2":
         keywords = input("Insira palavras-chave para pesquisar!" )       
         for i in Paper_file:
             if "keywords" in i:
                 if keywords in i["keywords"].split(","):
                     listapesquisa.append(i)
+                    
     elif resposta == "3":        
         data = input("Insira uma data para pesquisar!" )
         for i in Paper_file:  
             if "publish_date" in i:
                 if data in i["publish_date"]: 
                     listapesquisa.append(i)
+
+
     elif resposta == "4":
         author = input("Insira um autor para pesquisar!" )  
         for i in Paper_file:     
@@ -103,6 +131,7 @@ def searchPaper(resposta):
                 if "name" in x:
                     if x["name"] == author:
                         listapesquisa.append(i)
+
     elif resposta == "5":
         affiliation = input("Insira uma afiliação para pesquisar!" )  
         for i in Paper_file:
@@ -110,8 +139,10 @@ def searchPaper(resposta):
                 if "affiliation" in x:
                     if x["affiliation"] == affiliation:
                         listapesquisa.append(i)
+
     else:
         return "Essa resposta não é valida!"
+    
     if len(listapesquisa) > 0:
         return listapesquisa
     else:
@@ -122,11 +153,11 @@ def searchPaper(resposta):
 #print (listinha)
 
 #2def ordenarPaper(resposta):
-    if resposta == "1":
-        listaordenada = "\n" + str(sorted(listinha, key=lambda artigo: artigo["title"]))
-    elif resposta == "2":
-        listaordenada = "\n" + str(sorted(listinha, key=lambda artigo: artigo["data"]))
-    return listaordenada
+    #if resposta == "1":
+        #listaordenada = "\n" + str(sorted(listinha, key=lambda artigo: artigo["title"]))
+    #elif resposta == "2":
+        #listaordenada = "\n" + str(sorted(listinha, key=lambda artigo: artigo["data"]))
+    #return listaordenada
 
 #print(ordenarPaper("1"))
 
@@ -151,6 +182,7 @@ def listarkeywords(resposta):
     for i in Paper_file:
         if "keywords" in i:
             for x in i["keywords"].split(","):
+                x = x.strip()
                 if x not in listkeys:
                     listkeys[str(x)] = {"Ocorrências" : 1,
                                         "Artigos" : [i["title"]]}
@@ -178,7 +210,8 @@ def graph():
 2) Gráfico de publicações por mês, num ano
 3) Gráfico de publicações por autor (Top 20)
 4) Gráfico de publicações de um autor ao longo dos anos
-5) Gráfico de ocorrências de palavras-chave (Top 20)""")
+5) Gráfico de ocorrências de palavras-chave (Top 20)
+6) Lista de palavras-chave com maior ocorrência em cada ano""")
     resposta = input("Que gráfico pretende construir?")
 
     if resposta == "1":
@@ -190,6 +223,10 @@ def graph():
                     listdatas[x[0:4]] = 1
                 else:
                     listdatas[x[0:4]] += 1
+            elif "publish_date" not in i and "N/A" not in listdatas:
+                listdatas["N/A"] = 1
+            else:
+                listdatas["N/A"] += 1
         matp.title("Distribuição de artigos por ano")
         matp.xlabel("ANOS")
         matp.ylabel("Publicações")
@@ -241,9 +278,12 @@ def graph():
                 x = i["publish_date"]
                 if x[0:4] not in listdatas:
                     listdatas[x[0:4]] = 1
-                    print(x[0:4])
                 else:
                     listdatas[x[0:4]] += 1
+            elif "publish_date" not in i and "N/A" not in listdatas:
+                listdatas["N/A"] = 1
+            else:
+                listdatas["N/A"] += 1
         matp.title("Distribuição de artigos por ano")
         matp.xlabel("ANOS")
         matp.ylabel("Publicações")
@@ -268,12 +308,48 @@ def graph():
         matp.show()
 
     if resposta == "6":
-        searchPaper("3")
-    
-graph()
+        listapares = {}
+        for i in Paper_file:
+            if "publish_date" in i:
+                x = i["publish_date"]
+                year = x[0:4]
+            else:
+                year = "N/A"
+            if year not in listapares:
+                listapares[year] = {}
+            if "keywords" in i:
+                for n in i["keywords"].split(","):
+                    n = n.strip()
+                    if n not in listapares[year]:
+                        listapares[year][n] = 1
+                    else:
+                        listapares[year][n] += 1
+        listaanos = {}
+        for ano, keywords in listapares.items():
+            if len(keywords) > 0:
+                listaordenada = sorted(keywords.items(), key=lambda param: param[1], reverse=True)
+                listaanos[ano] = [listaordenada[0]]
+        for i in listaanos.items():
+            print (i)
 
+def guardarFicheiro(nome):
+    with open(nome, "w", encoding = "utf-8") as file:
+        file = Paper_file
+    return "nice :)"
+
+#Como deixar o utilizador alterar o ficheiro raiz? Começar em "wr" ou "r+" ???
+#Como deixar o utilizador escolher que ficheiro utiliza para as operações, se tiver mais de um aberto? Reestruturar codigo, tendo como argumento de todas as funções a especificaçãao de que ficheiro se quer usar?
+#Exportar para um novo ficheiro
+
+def guardarPesquisa(nome, param):
+    with open(nome, "w", encoding = "utf-8") as file:
+        file = param
+        return file
         
-
+graph()
+graph()
+graph()
+graph()
 #escolha = input("escolha")
 
 #if escolha = "2":
