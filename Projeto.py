@@ -1,9 +1,12 @@
 #PROJETO PROGRAMAÇÃO
-
+import os
 import json #importa o formato do documento do dataset
 import matplotlib.pyplot as matp #importa as funcionalidades do matplotlib
 
 Paper_file = []
+
+def clear_console():
+    os.system('cls' if os.name == 'nt' else 'clear')
 
 def carregaFicheiro(nome): #função de importação de datasets
     try:
@@ -17,9 +20,9 @@ def carregaFicheiro(nome): #função de importação de datasets
     except json.JSONDecodeError: #se o ficheiro não estiver bem formatado
         print(f"Ficheiro '{nome}' não é um JSON válido.")
         return []
-    
+
 Paper_file = carregaFicheiro("ata_medica_papers.json")
-    
+
 def guardaFicheiro(nome, dados): #função de exportação de datasets
     try:
         with open(nome, "w", encoding="utf-8") as file:
@@ -27,6 +30,7 @@ def guardaFicheiro(nome, dados): #função de exportação de datasets
         print(f"Ficheiro '{nome}' guardado com sucesso!")
     except Exception as e: #para qualquer erro, mostra ao utilizador o erro que ocorreu
         print(f"Erro a guardar ficheiro '{nome}': {e}")
+
 
 def exportSearch(nome, dados): #função de exportação de uma lista de pesquisa
     try:
@@ -47,7 +51,6 @@ def insPaper(abstract, keywords, autores, link1, pdf, data, title, link2): #fun�
              "url" : link2} #cria um dicionario com todos os dados relevantes a um artigo
     Paper_file.append(Paper) #insere o artigo no ficheiro (sem o guardar)
     return "Paper publicado com sucesso!"
-
 
 def editarPaper(titulo, title, abstract, keywords, authors, data): #função de edição de artigos
     for i in Paper_file:
@@ -98,7 +101,7 @@ def editarPaper(titulo, title, abstract, keywords, authors, data): #função de 
 
     return f"Processo concluido com sucesso: {Paper_file[Paper_file.index(artigo)]}"
 
-def searchPaper(resposta): #função de pesquisa de artigos
+def searchPaper(resposta: int): #função de pesquisa de artigos
     listapesquisa = []
     if resposta == "1": #se o utilizador quiser pesquisar por titulo
         title = input("Insira um título para pesquisar!")
@@ -145,6 +148,16 @@ def searchPaper(resposta): #função de pesquisa de artigos
         return listapesquisa
     else:
         return "Nenhum ficheiro encontrado!"
+    
+def elimPaper(listaescolhida):
+    print("""Menu de Utilizador
+      [1] Pesquisar por título
+      [2] Pesquisar por palavras-chave
+      [3] Pesquisar por data
+      [4] Pesquisar por autor
+      [5] Pesquisar por afiliação""")
+    resposta = int(input("Escolha uma opção: "))
+    searchPaper(resposta)
 
 #resposta = input("Escolha")
 #listinha = searchPaper(resposta)
@@ -159,10 +172,12 @@ def searchPaper(resposta): #função de pesquisa de artigos
 
 #print(ordenarPaper("1"))
 
-def listarauth(resposta): #função de listar autores
+def listarauth(resposta: int, limit: int = -1): #função de listar autores
     listauth = {}
-    for i in Paper_file:
-        for x in i["authors"]:
+    if limit == -1: limit = 100000
+    for i in range(min(limit, len(Paper_file))):
+        authors = Paper_file[i]["authors"]
+        for x in authors:
             if x["name"] not in listauth: #verifica se o autor já foi adicionado à lista
                 listauth[str(x["name"])] = 1 #adiciona o autor à lista e define o número de ocorreências como 1
             else:
@@ -330,9 +345,3 @@ def graph():
                 listaanos2 = sorted(listaanos.items(), key=lambda param: param[0], reverse=True)
         for i in listaanos2:
             print (i)
-
-
-graph()
-graph()
-graph()
-graph()
