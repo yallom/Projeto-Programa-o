@@ -103,21 +103,21 @@ def editarPaper(titulo, title, abstract, keywords, authors, data): #função de 
 
 def searchPaper(resposta: int): #função de pesquisa de artigos
     listapesquisa = []
-    if resposta == "1": #se o utilizador quiser pesquisar por titulo
+    if resposta == 1: #se o utilizador quiser pesquisar por titulo
         title = input("Insira um título para pesquisar!")
         for i in Paper_file:
             if "title" in i: #verifica se o artigo tem título
                 if i["title"] == title:
                     listapesquisa.append(i)
 
-    elif resposta == "2": #se o utilizador quiser pesquisar por palavras-chave
+    elif resposta == 2: #se o utilizador quiser pesquisar por palavras-chave
         keywords = input("Insira palavras-chave para pesquisar!" )       
         for i in Paper_file:
             if "keywords" in i: #verifica se o artigo tem palavras-chave
                 if keywords in i["keywords"].split(","):
                     listapesquisa.append(i)
                     
-    elif resposta == "3": #se o utilizador quiser pesquisar por data de publicação
+    elif resposta == 3: #se o utilizador quiser pesquisar por data de publicação
         data = input("Insira uma data para pesquisar!" )
         for i in Paper_file:  
             if "publish_date" in i: #verifica se o artigo tem data de publicação
@@ -125,7 +125,7 @@ def searchPaper(resposta: int): #função de pesquisa de artigos
                     listapesquisa.append(i)
 
 
-    elif resposta == "4": #se o utilizador quiser pesquisar por autor
+    elif resposta == 4: #se o utilizador quiser pesquisar por autor
         author = input("Insira um autor para pesquisar!" )  
         for i in Paper_file:     
             for x in i["authors"]: 
@@ -133,7 +133,7 @@ def searchPaper(resposta: int): #função de pesquisa de artigos
                     if x["name"] == author:
                         listapesquisa.append(i)
 
-    elif resposta == "5": #se o utilizador quiser pesquisar por afiliação
+    elif resposta == 5: #se o utilizador quiser pesquisar por afiliação
         affiliation = input("Insira uma afiliação para pesquisar!" )  
         for i in Paper_file:
             for x in i["authors"]:
@@ -148,16 +148,93 @@ def searchPaper(resposta: int): #função de pesquisa de artigos
         return listapesquisa
     else:
         return "Nenhum ficheiro encontrado!"
+
+def searchPaper2(sublista: list, resposta: int): #função de pesquisa de artigos
+    listapesquisa = []
+    if resposta == 1: #se o utilizador quiser pesquisar por titulo
+        title = input("Insira um título para pesquisar!")
+        for i in sublista:
+            if "title" in i: #verifica se o artigo tem título
+                if i["title"] == title:
+                    listapesquisa.append(i)
+
+    elif resposta == 2: #se o utilizador quiser pesquisar por palavras-chave
+        keywords = input("Insira palavras-chave para pesquisar!" )       
+        for i in sublista:
+            if "keywords" in i: #verifica se o artigo tem palavras-chave
+                if keywords in i["keywords"].split(","):
+                    listapesquisa.append(i)
+                    
+    elif resposta == 3: #se o utilizador quiser pesquisar por data de publicação
+        data = input("Insira uma data para pesquisar!" )
+        for i in sublista:  
+            if "publish_date" in i: #verifica se o artigo tem data de publicação
+                if data in i["publish_date"]: 
+                    listapesquisa.append(i)
+
+
+    elif resposta == 4: #se o utilizador quiser pesquisar por autor
+        author = input("Insira um autor para pesquisar!" )  
+        for i in sublista:     
+            for x in i["authors"]: 
+                if "name" in x: #verifica se o autor tem nome
+                    if x["name"] == author:
+                        listapesquisa.append(i)
+
+    elif resposta == 5: #se o utilizador quiser pesquisar por afiliação
+        affiliation = input("Insira uma afiliação para pesquisar!" )  
+        for i in sublista:
+            for x in i["authors"]:
+                if "affiliation" in x: #verifica se o autor tem afiliação
+                    if x["affiliation"] == affiliation:
+                        listapesquisa.append(i)
+
+    else:  #se o utilizador não submeter uma opção válida
+        return "Essa resposta não é valida!"
     
-def elimPaper(listaescolhida):
-    print("""Menu de Utilizador
+    if len(listapesquisa) > 0: #verifica se algum ficheiro foi encontrado com os parametros estabelecidos
+        return listapesquisa
+    else:
+        return "Nenhum ficheiro encontrado!"
+
+def elimPaper():
+    pesquisa = []
+    print("""Menu de Eliminação
       [1] Pesquisar por título
       [2] Pesquisar por palavras-chave
       [3] Pesquisar por data
       [4] Pesquisar por autor
       [5] Pesquisar por afiliação""")
     resposta = int(input("Escolha uma opção: "))
-    searchPaper(resposta)
+    pesquisa = searchPaper(resposta)
+    while len(pesquisa) > 9:
+        print(f"""O resultado da pesquisa retornou {len(pesquisa)} items. Adicione outro critério de pesquisa.
+            [1] Pesquisar por título
+            [2] Pesquisar por palavras-chave
+            [3] Pesquisar por data
+            [4] Pesquisar por autor
+            [5] Pesquisar por afiliação""")
+        resposta = int(input("Escolha uma opção: "))
+        pesquisa = searchPaper2(pesquisa, resposta)
+    if type(pesquisa) != type(["a", "b", "c"]):
+        print(pesquisa)
+        print("A pesquisa não retornou nenhum paper que possa ser eliminado.")
+        return 0
+    else:
+        print("Menu de Eliminação")
+        for i in range(len(pesquisa)):
+            print(f"[{i+1}] {pesquisa[i]["title"]}")
+        print("\n" + "[0] Cancelar operação")
+        resposta = int(input("Escolha o paper a eliminar: "))-1
+        while resposta not in range(len(pesquisa)):
+            if resposta == -1: return 0
+            else:
+                resposta = int(input("Escolha inválida. Tente outra vez: "))-1
+        target = pesquisa[resposta]
+        Paper_file.remove(target)
+        return 0
+
+
 
 #resposta = input("Escolha")
 #listinha = searchPaper(resposta)
