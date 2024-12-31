@@ -49,6 +49,8 @@ def insPaper(abstract, keywords, autores, link1, pdf, data, title, link2): #fun�
     return "Paper publicado com sucesso!"
 
 
+
+
 def editarPaper(titulo, title, abstract, keywords, authors, data): #função de edição de artigos
     for i in Paper_file:
         if i["title"] == titulo: #verifica se cada artigo é o que se pretende alterar
@@ -97,6 +99,21 @@ def editarPaper(titulo, title, abstract, keywords, authors, data): #função de 
         Paper_file[Paper_file.index(artigo)]["publish_date"] = data
 
     return f"Processo concluido com sucesso: {Paper_file[Paper_file.index(artigo)]}"
+
+def editarPaper_master(artigo,r2,r3,r4,r5,r6):
+    a
+
+
+def editarPaper_escolha(title):
+    for i in Novo_ficheiro:
+        if all (i["title"] != title for i in Paper_file):
+            print ("Não existe nenhum artigo com esse título.")
+            return None
+        elif i["title"] == title: #verifica se cada artigo é o que se pretende alterar
+            artigo = i
+            print ("Artigo encontrado!")
+            return artigo
+
 
 def searchPaper(resposta): #função de pesquisa de artigos
     listapesquisa = []
@@ -331,8 +348,61 @@ def graph():
         for i in listaanos2:
             print (i)
 
+def menu():
+    resposta = 0
+    while resposta != 0:
+        resposta = input("""1) Carregar ficheiro
+                         2) Guardar ficheiro
+                         3) Criar artigo
+                         4) Editar artigo
+                         5) Procurar por artigo
+                         6) Listar autores
+                         7) Listar palavras-chave
+                         8) Gráficos
+                         0) Sair""")
 
-graph()
-graph()
+        if resposta == "1":
+            name = input("Qual o nome do ficheiro que deseja carregar?")
+            Novo_ficheiro = carregaFicheiro(name)
+        
+        elif resposta == "2":
+            name = input("Qual o nome que deseja dar ao seu ficheiro?")
+            guardaFicheiro(name,Novo_ficheiro)
+        
+        elif resposta == "3":
+            
+            sinopse = input("Escolha uma sinopse para o seu artigo.")
+            keys = input("Escolha as palavras-chave para o seu artigo, separadas por vírgulas.")
+            N_autores = int(input("Quantos autores deseja ter no seu artigo?"))
+            autores = []
+            for i in range(N_autores):
+                nomeAutor = input(f"Escolha um nome para o novo autor ({i+1}/{N_autores}).")
+                afilAutor = input(f"Escolha uma afiliação para o novo autor ({i+1}/{N_autores}).")
+                autor = {"name":nomeAutor, "affiliation":afilAutor}
+                autores.append(autor)
+            url = input("Escolha um DOI para o seu artigo.")
+            pdf = input("Escolha um link para o pdf do seu artigo.")
+            data = input("Escolha a data de publicação para o seu artigo.")
+            titulo = input("Escolha um título para o seu artigo.")
+            link = input("Escolha um link para o seu artigo.")
+            
+            insPaper(sinopse, keys, autores, url, pdf, data, titulo, link) #definir o dataset como Novo_ficheiro
+
+        elif resposta == "4":
+            #def editarPaper(titulo, title, abstract, keywords, authors, data)
+            titulo = input("Qual o título do artigo que deseja editar?")
+            article = editarPaper_escolha(titulo)
+            r2 = input("Deseja editar o título do artigo? (s/n)")
+            if r2 == "s":
+                res = input("")
+            r3 = input("Deseja editar a sinopse do artigo? (s/n)")
+            r4 = input("Deseja editar as palavras-chave do artigo? (s/n)")
+            r5 = input("Deseja editar os autores do artigo? (s/n)")
+            r6 = input("Deseja editar a data de publicação do artigo? (s/n)")
+
+
+
+
+graph() 
 graph()
 graph()
