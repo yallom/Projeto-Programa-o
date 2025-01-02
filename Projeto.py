@@ -273,13 +273,15 @@ def graph():
         matp.show()
     
     if resposta == "3":
-        listatop = listarauth("1") #cria uma lista dos autores com mais publicações
+        listatop = listarauth("1")
+        print(listatop) #cria uma lista dos autores com mais publicações
         listatop20 = listatop[:20] #escolhe os 20 autores com mais publicações
         matp.title("Distribuição de artigos por autor (Top 20)")
         matp.xlabel("Autor")
         matp.ylabel("Publicações")
         listaordenada = sorted(listatop20, key = lambda param: param[1])
         datas = [i[0] for i in listaordenada]
+        print (datas)
         Publicações = [int(i[1]) for i in listaordenada]
         matp.plot(datas, Publicações, label = "Nº de Artigos", color = "r", marker = "o")
         matp.legend()

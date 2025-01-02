@@ -1,5 +1,5 @@
 import json
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as matp
 import PySimpleGUI as sg
 from typing import Dict, List
 
@@ -57,20 +57,67 @@ class SistemaPubs:
             print(f"Erro ao criar publicação: {e}")
             return False
 
-    def atualizar_publicacao(self, titulo: str, dados_novos: Dict) -> bool:
-        #Atualiza uma publicação existente
+    def editarPaper(self, titulo, title, abstract, keywords, authors, data): #função de edição de artigos
+        for i in self.publicacoes:
+            if i["title"] == titulo: #verifica se cada artigo é o que se pretende alterar
+                artigo = i
+        if title == "s": #se o utilizador quiser alterar o titulo escreve "s"
+            title = input("Qual deve ser o novo título?")
+            self.publicacoes[self.publicacoes.index(artigo)]["title"] = title
+        if abstract == "s": #se o utilizador quiser alterar a sinpose escreve "s"
+            abstract = input("Qual deve ser a nova sinpose?")
+            self.publicacoes[self.publicacoes.index(artigo)]["abstract"] = abstract
+        if keywords == "s": #se o utilizador quiser alterar as palavras-chave escreve "s"
+            keywords = input("Quais devem ser as novas palavras-chave?")
+            self.publicacoes[self.publicacoes.index(artigo)]["keywords"] = keywords
+        if authors == "s": #se o utilizador quiser alterar os autores escreve "s"
+            resposta = input("Deseja adicionar, remover, ou editar algum autor? (a/r/e)")
+            if resposta == "a": #se o utilizador quiser adicionar um autor escreve "a"
+                numauth = int(input("Quantos autores quer adicionar?"))
+                while numauth > 0: #conta o número de autores que já foram adicionados
+                    autor = input("Nomeie um autor")
+                    afiliação = input("Qual a afiliação desse autor?")
+                    pessoa = {"name" : autor,
+                            "affiliation" : afiliação} #cria um dicionário com toda a informação relevante a um autor
+                    numauth -= 1
+                    self.publicacoes[self.publicacoes.index(artigo)]["authors"].append(pessoa) #insere o autor no artigo
+            elif resposta == "r": #se o utilizador quiser remover um autor escreve "r"
+                print(self.publicacoes[self.publicacoes.index(artigo)]["authors"]) #mostra ao utilizador os autores no artigo
+                removido = int(input("Qual o número do autor que pretende remover? (1-x)"))
+                self.publicacoes[self.publicacoes.index(artigo)]["authors"].remove(self.publicacoes[self.publicacoes.index(artigo)]["authors"][removido - 1]) #remove o autor escolhido pelo utilizador
+            elif resposta == "e": #se o utilizador quiser editar um autor escreve "e"
+                print(self.publicacoes[self.publicacoes.index(artigo)]["authors"])
+                alterado = int(input("qual o número do autor que pretende alterar? (1-x)"))
+                modo = input("Pretende alterar o nome, a afiliação, ou ambos? (1,2,3)") 
+                if modo == "1":  #se o utilizador quiser alterar o nome do autor
+                    novonome = input("Escolha um novo nome!")
+                    self.publicacoes[self.publicacoes.index(artigo)]["authors"][alterado - 1]["name"] = novonome
+                elif modo == "2":  #se o utilizador quiser alterar a afiliação do autor
+                    novaafiliacao = input("Escolha uma nova afiliação!")
+                    self.publicacoes[self.publicacoes.index(artigo)]["authors"][alterado - 1]["affiliation"] = novaafiliacao
+                elif modo == "3":  #se o utilizador quiser alterar o nome e afiliação do autor
+                    novonome = input("Escolha um novo nome!")
+                    self.publicacoes[self.publicacoes.index(artigo)]["authors"][alterado - 1]["name"] = novonome
+                    novaafiliacao = input("Escolha uma nova afiliação!")
+                    self.publicacoes[self.publicacoes.index(artigo)]["authors"][alterado - 1]["affiliation"] = novaafiliacao
+        if data == "s": #se o utilizador quiser alterar a data de publicação escreve "s"
+            data = input("Qual deve ser a nova data de publicação?")
+            self.publicacoes[self.publicacoes.index(artigo)]["publish_date"] = data
+
+        return f"Processo concluido com sucesso: {self.publicacoes[self.publicacoes.index(artigo)]}"
+    
+    def searchSpecific(self,title):
         try:
-            for i, pub in enumerate(self.publicacoes):
-                if pub['title'] == titulo:
-                    # Atualiza apenas os campos fornecidos
-                    for campo, valor in dados_novos.items():
-                        self.publicacoes[i][campo] = valor
-                    return True
-            print("Publicação não encontrada")
-            return False
+            for artigo in self.publicacoes:
+                if 'title' in artigo:
+                    if artigo['title'] == title:
+                        return artigo
+            print('Artigo não encontrado!')
+            return {}
         except Exception as e:
-            print(f"Erro ao atualizar publicação: {e}")
-            return False
+            print(f"Erro ao eliminar publicação: {e}")
+            return {}
+
 
     def eliminar_publicacao(self, titulo: str) -> bool:
         #Elimina uma publicação da base de dados
@@ -181,102 +228,135 @@ class SistemaPubs:
                         reverse=True)
 
 
-    def gerar_graficos(self, tipo: str, parametros: Dict = None) -> None:
-        #Gera diferentes tipos de gráficos estatísticos
-        try:
-            plt.figure(figsize=(10, 6))
-            
-            if tipo == "pub_por_ano":
-                # Distribuição de publicações por ano
-                anos = {}
-                for pub in self.publicacoes:
-                    ano = pub['publish_date'][:4]
-                    anos[ano] = anos.get(ano, 0) + 1
-                
-                plt.bar(anos.keys(), anos.values())
-                plt.title("Publicações por Ano")
-                plt.xlabel("Ano")
-                plt.ylabel("Número de Publicações")
+    def graph(self, tipo, escolha: str = None):
+        if tipo == "1":
+            listdatas = {}
+            for i in self.publicacoes:
+                if "publish_date" in i:
+                    x = i["publish_date"] #x= YYYY/MM/DD
+                    if x[0:4] not in listdatas: #verifica se o ano em que o artigo foi publicado já existe em listadatas
+                        listdatas[x[0:4]] = 1 #cria uma constante (x[0:4]) e dá-lhe o valor de 1
+                    else:
+                        listdatas[x[0:4]] += 1 #+1 para o número de ocorrências de artigos num ano, se o ano já existir na lista
+                elif "publish_date" not in i and "N/A" not in listdatas: #se o artigo não tiver data, e se ainda não houver uma constante de data indefinida em listadatas, cria essa constante e dá-lhe o valor de 1
+                    listdatas["N/A"] = 1
+                else:
+                    listdatas["N/A"] += 1 #+1 para "N/A"
+            matp.title("Distribuição de artigos por ano") #define titulo do grafico
+            matp.xlabel("ANOS") #define nome da abcissa
+            matp.ylabel("Publicações") #define nome da ordenada
+            listaordenada = sorted(listdatas.items(), key = lambda param: param[0]) #ordena a lista de datas, de acordo com o número de publicações por ano (menor->maior)
+            datas = [i[0] for i in listaordenada] #cria um alista apenas com os anos, já ordenados
+            Publicações = [int(i[1]) for i in listaordenada] #cria uma lista, apenas com as ocorrências, já ordenadas
+            matp.plot(datas, Publicações, label = "Nº de Artigos", color = "b", marker = "o") #define x = datas, y = Publicações, nome da variável = "Nº de Artigos", cor do grafico = blue, identificador de dados = círculo ("o")
+            matp.legend() #ativa a legenda (nome da variável)
+            matp.show() #ativa o gráfico
 
-            elif tipo == "pub_por_mes" and parametros and 'ano' in parametros:
-                # Distribuição de publicações por mês num ano específico
-                meses = {}
-                ano_alvo = parametros['ano']
-                for pub in self.publicacoes:
-                    if pub['publish_date'].startswith(ano_alvo):
-                        mes = pub['publish_date'][5:7]
-                        meses[mes] = meses.get(mes, 0) + 1
-                
-                plt.bar(meses.keys(), meses.values())
-                plt.title(f"Publicações por Mês em {ano_alvo}")
-                plt.xlabel("Mês")
-                plt.ylabel("Número de Publicações")
+        if tipo == "2":
+            listdatas = {}
+            for i in self.publicacoes:
+                if "publish_date" in i:
+                    x = i["publish_date"] #x= YYYY/MM/DD
+                    if x[0:4] == escolha and x[5:7] not in listdatas: #verifica se o mês em que o artigo foi publicado já existe em listadatas e se o artigo pertence ao ano correto
+                        listdatas[x[5:7]] = 1
+                    elif x[0:4] == escolha:
+                        listdatas[x[5:7]] += 1
+            if listdatas == []:
+                return False
+            matp.title("Distribuição de artigos num ano")
+            matp.xlabel("MESES")
+            matp.ylabel("Publicações")
+            listaordenada = sorted(listdatas.items(), key = lambda param: param[0])
+            autores = [i[0] for i in listaordenada]
+            Publicações = [int(i[1]) for i in listaordenada]
+            matp.plot(autores, Publicações, label = "Nº de Artigos", color = "r", marker = "o") #cor do grafico = "red"
+            matp.legend()
+            matp.show()
+        
+        if tipo == "3":
+            listatop = self.analisar_autores("frequencia") #cria uma lista dos autores com mais publicações
+            #print(listatop)
+            listatop20 = listatop[:20] #escolhe os 20 autores com mais publicações
+            listatop20.reverse()
+            matp.title("Distribuição de artigos por autor (Top 20)")
+            matp.xlabel("Autor")
+            matp.ylabel("Publicações")
+            datas = [i[0] for i in listatop20]
+            Publicações = [int(i[1]['Ocorrências']) for i in listatop20]
+            matp.plot(datas, Publicações, label = "Nº de Artigos", color = "r", marker = "o")
+            matp.legend()
+            matp.show()
 
-            elif tipo == "top_autores":
-                # Top 20 autores por número de publicações
-                analise = self.analisar_autores()[:20]
-                autores = [a[0] for a in analise]
-                contagens = [a[1]['Ocorrências'] for a in analise]
-                
-                plt.bar(autores, contagens)
-                plt.title("Top 20 Autores por Número de Publicações")
-                plt.xticks(rotation=45, ha='right')
-                plt.ylabel("Número de Publicações")
+        if tipo == "4":
+            listinha = self.pesquisar_publicacoes('autor',escolha) #cria uma lista com os artigos de um autor
+            listdatas = {}
+            for i in listinha:
+                if "publish_date" in i:
+                    x = i["publish_date"]
+                    if x[0:4] not in listdatas:
+                        listdatas[x[0:4]] = 1
+                    else:
+                        listdatas[x[0:4]] += 1
+                elif "publish_date" not in i and "N/A" not in listdatas:
+                    listdatas["N/A"] = 1
+                else:
+                    listdatas["N/A"] += 1
+            matp.title("Distribuição de artigos por ano")
+            matp.xlabel("ANOS")
+            matp.ylabel("Publicações")
+            listaordenada = sorted(listdatas.items(), key = lambda param: param[0])
+            datas = [i[0] for i in listaordenada]
+            Publicações = [int(i[1]) for i in listaordenada]
+            matp.plot(datas, Publicações, label = "Nº de Artigos", color = "b", marker = "o")
+            matp.legend()
+            matp.show()
 
-            elif tipo == "pub_autor_anos" and parametros and 'autor' in parametros:
-                # Publicações de um autor específico por ano
-                autor_alvo = parametros['autor']
-                anos = {}
-                for pub in self.publicacoes:
-                    if any(autor['name'] == autor_alvo for autor in pub['authors']):
-                        ano = pub['publish_date'][:4]
-                        anos[ano] = anos.get(ano, 0) + 1
-                
-                plt.bar(anos.keys(), anos.values())
-                plt.title(f"Publicações de {autor_alvo} por Ano")
-                plt.xlabel("Ano")
-                plt.ylabel("Número de Publicações")
+        if tipo == "5":
+            listinha = self.analisar_keywords("frequencia")[:20]#cria uma lista das top 20 keywords em termos de utilização
+            matp.title("Distribuição de ocorrências de palavras-chave")
+            matp.xlabel("Palavras-chave")
+            matp.ylabel("Publicações")
+            listinha.reverse() #inverte o sentido da lista de keywords
+            print (listinha)
+            keys = [i[0] for i in listinha]
+            Publicações = [int(i[1]['Ocorrências']) for i in listinha]
+            matp.plot(keys, Publicações, label = "Nº de Artigos", color = "b", marker = "o")
+            matp.legend()
+            matp.show()
 
-            elif tipo == "top_keywords":
-                # Top 20 palavras-chave por frequência
-                analise = self.analisar_keywords()[:20]
-                keywords = [k[0] for k in analise]
-                contagens = [k[1]['Ocorrências'] for k in analise]
-                
-                plt.bar(keywords, contagens)
-                plt.title("Top 20 Palavras-chave por Frequência")
-                plt.xticks(rotation=45, ha='right')
-                plt.ylabel("Frequência")
-
-            elif tipo == "keywords_por_ano":
-                # Palavras-chave mais frequentes por ano
-                anos_kw = {}
-                for pub in self.publicacoes:
-                    ano = pub['publish_date'][:4]
-                    if ano not in anos_kw:
-                        anos_kw[ano] = {}
-                    
-                    keywords = [k.strip() for k in pub['keywords'].split(',')]
-                    for kw in keywords:
-                        anos_kw[ano][kw] = anos_kw[ano].get(kw, 0) + 1
-                
-                # Encontra a palavra-chave mais frequente para cada ano
-                top_kw_por_ano = {ano: max(kws.items(), key=lambda x: x[1])[0] 
-                                for ano, kws in anos_kw.items()}
-                
-                plt.bar(top_kw_por_ano.keys(), [1]*len(top_kw_por_ano))
-                plt.title("Palavra-chave Mais Frequente por Ano")
-                plt.xticks(rotation=45, ha='right')
-                
-                # Adiciona as palavras-chave como anotações
-                for i, (ano, kw) in enumerate(top_kw_por_ano.items()):
-                    plt.text(i, 1.1, kw, rotation=45, ha='right')
-
-            plt.tight_layout()
-            plt.show()
-
-        except Exception as e:
-            print(f"Erro ao gerar gráfico: {e}")
+        if tipo == "6":
+            listapares = {}
+            for i in self.publicacoes:
+                if "publish_date" in i:
+                    x = i["publish_date"]
+                    year = x[0:4]
+                else:
+                    year = "N/A"
+                if year not in listapares:
+                    listapares[year] = {}
+                if "keywords" in i:
+                    for n in i["keywords"].split(","):
+                        n = n.strip()
+                        if n not in listapares[year]:
+                            listapares[year][n] = 1
+                        else:
+                            listapares[year][n] += 1
+            listaanos = {}
+            for ano, keywords in listapares.items():
+                if len(keywords) > 0:
+                    listaordenada = sorted(keywords.items(), key=lambda param: param[1], reverse=True)
+                    listaanos[ano] = [listaordenada[0]]
+                    listaanos2 = sorted(listaanos.items(), key=lambda param: param[0], reverse=True)
+            for i in listaanos2:
+                print (i)
+            matp.title("Top 20 Palavras-chave")
+            matp.xlabel("Palavras-chave")
+            matp.ylabel("Ocorrências")
+            anos = [int(i[0]) for i in listaanos2]
+            keys = [i[1][0][0] for i in listaanos2]
+            matp.plot(anos, keys, label = "Nº de Artigos", color = "b", marker = "o")
+            matp.legend()
+            matp.show()
 
     def exportar_resultados(self, resultados: List[Dict], nome_ficheiro: str) -> bool:
         #Exporta resultados de pesquisa para um ficheiro
@@ -390,18 +470,128 @@ def main():
                     sg.popup(f"Erro inesperado: {e}", title="Erro")
             janela_add.close()
         
-        elif event == 'Pesquisar Publicações':
+        elif event == 'Editar Publicação':
             layout = [
+                [sg.Text('Título da publicação que deseja editar:'), sg.Input(key='title')],
+                [sg.Button('Procurar'), sg.Button('Cancelar')]
+            ]
+            janela_edit = sg.Window('Editar Publicação', layout)
+            while True:
+                evento_edit, valores_edit = janela_edit.read()
+                if evento_edit in (sg.WIN_CLOSED, 'Cancelar'):  # Trata fechamento ou cancelamento
+                    break
+                elif evento_edit == 'Procurar':
+                    artigo = {}
+                    for i in sistema.publicacoes:
+                        if i["title"] == valores_edit['title']:  # Verifica se o artigo é o que se pretende alterar
+                            artigo = i
+                            break
+
+                    if artigo != {}:
+                        # Criar layout dinâmico com campos editáveis para o artigo
+                        layout_editar = []
+
+                        # Adiciona a tabela com os dados do artigo para exibição
+                        layout_editar.append([
+                            sg.Table(
+                                values=[[chave, artigo[chave]] for chave in artigo],  # Lista de valores no formato [chave, valor]
+                                headings=['Campo', 'Valor'],  # Cabeçalhos
+                                key='table1',
+                                auto_size_columns=True,
+                                justification='left',
+                                num_rows=len(artigo)  # Define o número de linhas da tabela
+                            )
+                        ])
+
+                        # Adiciona campos de entrada editáveis
+                        layout_editar.extend([
+                            [sg.Text(f"{chave}:"), sg.Input(default_text=str(valor), key=chave)]
+                            for chave, valor in artigo.items()
+                        ])
+
+                        # Botões de confirmação e cancelamento
+                        layout_editar.append([sg.Button('Confirmar'), sg.Button('Cancelar')])
+
+                        janela_edit_2 = sg.Window('Editar Publicação', layout_editar)
+                        while True:
+                            evento_edit_2, valores_edit_2 = janela_edit_2.read()
+                            if evento_edit_2 in (sg.WIN_CLOSED, 'Cancelar'):  # Trata fechamento ou cancelamento
+                                break
+                            elif evento_edit_2 == 'Confirmar':
+                                # Atualiza o artigo diretamente na base de dados
+                                for chave in valores_edit_2:
+                                    artigo[chave] = valores_edit_2[chave]
+                                sg.popup("Alterações salvas com sucesso!", title="Sucesso")
+                                break
+                        janela_edit_2.close()
+                    else:
+                        sg.popup('Artigo não encontrado!')
+            janela_edit.close()
+
+
+        elif event == 'Pesquisar Publicações':
+            resultados = {}
+            layout_pesq = [
                 [sg.Text('Critério de Pesquisa:'), sg.Combo(['titulo', 'autor', 'afiliacao', 'data', 'keywords'], key='criterio')],
                 [sg.Text('Valor:'), sg.Input(key='valor')],
                 [sg.Button('Pesquisar'), sg.Button('Cancelar')]
             ]
-            janela_pesq = sg.Window('Pesquisar Publicações', layout)
-            evento_pesq, valores_pesq = janela_pesq.read()
-            if evento_pesq == 'Pesquisar':
-                resultados = sistema.pesquisar_publicacoes(valores_pesq['criterio'], valores_pesq['valor'])
-                sg.popup_scrolled(json.dumps(resultados, ensure_ascii=False, indent=4), title="Resultados da Pesquisa")
+            janela_pesq = sg.Window('Pesquisar Publicações', layout_pesq)
+
+            while True:
+                evento_pesq, valores_pesq = janela_pesq.read()
+                if evento_pesq in (sg.WIN_CLOSED, 'Cancelar'):  # Encerrar a janela
+                    break
+
+                if evento_pesq == 'Pesquisar':
+                    # Realiza a pesquisa
+                    resultados = sistema.pesquisar_publicacoes(valores_pesq['criterio'], valores_pesq['valor'])
+
+                    if resultados:
+                        # Exibe os resultados
+                        layout_resultados = [
+                            [sg.Text('Resultados da Pesquisa:')],
+                            [sg.Multiline(json.dumps(resultados, ensure_ascii=False, indent=4), size=(60, 20), disabled=True)],
+                            [sg.Button('Exportar Resultados'), sg.Button('Fechar')]
+                        ]
+                        janela_resultados = sg.Window('Resultados de Pesquisa', layout_resultados)
+
+                        while True:
+                            evento_res, _ = janela_resultados.read()
+                            if evento_res in (sg.WIN_CLOSED, 'Fechar'):
+                                janela_resultados.close()
+                                break
+
+                            if evento_res == 'Exportar Resultados':
+                                # Pergunta se deseja exportar
+                                layout_exportar = [
+                                    [sg.Text('Nome do arquivo para exportar os resultados:')],
+                                    [sg.Input(key='fnome'), sg.FileSaveAs(file_types=(("JSON Files", "*.json"),))],
+                                    [sg.Button('Exportar'), sg.Button('Cancelar')]
+                                ]
+                                janela_exportar = sg.Window('Exportar Resultados', layout_exportar)
+
+                                evento_exp, valores_exp = janela_exportar.read()
+                                if evento_exp in (sg.WIN_CLOSED, 'Cancelar'):
+                                    janela_exportar.close()
+                                    continue
+
+                                if evento_exp == 'Exportar':
+                                    # Exporta os resultados para o arquivo especificado
+                                    nome_arquivo = valores_exp.get('fnome', '').strip()
+                                    if nome_arquivo:
+                                        try:
+                                            with open(nome_arquivo, 'w', encoding='utf-8') as f:
+                                                json.dump(resultados, f, ensure_ascii=False, indent=4)
+                                            sg.popup("Resultados exportados com sucesso!", title="Sucesso")
+                                        except Exception as e:
+                                            sg.popup(f"Erro ao exportar resultados: {e}", title="Erro")
+                                    else:
+                                        sg.popup("Por favor, insira um nome de arquivo válido.", title="Erro")
+                                    janela_exportar.close()
+
             janela_pesq.close()
+
 
         elif event == 'Listar Autores':
             layout = [
@@ -456,15 +646,46 @@ def main():
         
         elif event == 'Estatísticas':
             layout = [
-                [sg.Text('Tipo de Estatística:'), sg.Combo(['pub_por_ano', 'pub_por_mes', 'top_autores', 'top_keywords', 'keywords_por_ano'], key='tipo')],
-                [sg.Text('Parâmetros (JSON):'), sg.Input(key='parametros')],
-                [sg.Button('Gerar Gráfico'), sg.Button('Cancelar')]
+                [sg.Text('Tipo de Estatística:')],
+                [sg.Button('Publicações por ano'), sg.Button('Publicações por mês, num ano')],
+                [sg.Button('Top 20 autores'), sg.Button('Publicações de um autor')],
+                [sg.Button('Top 20 keywords'), sg.Button('Keywords por ano')],
+                [sg.Button('Cancelar')]
             ]
             janela_est = sg.Window('Gerar Estatísticas', layout)
             evento_est, valores_est = janela_est.read()
-            if evento_est == 'Gerar Gráfico':
-                parametros = json.loads(valores_est['parametros']) if valores_est['parametros'] else {}
-                sistema.gerar_graficos(valores_est['tipo'], parametros)
+            if evento_est in (sg.WINDOW_CLOSED or 'Cancelar'):
+                break
+            elif evento_est == 'Publicações por ano':
+                sistema.graph("1")
+            elif evento_est == 'Publicações por mês, num ano':
+                layout = [
+                    [sg.Text('Ano que deseja visualizar:'),sg.Input(key = 'ano')],
+                    [sg.Button('Visualizar'), sg.Button('Cancelar')]
+                ]
+                janela_stat = sg.Window('Estatísticas', layout)
+                evento_stat, valor_stat = janela_stat.read()
+                if evento_stat in (sg.WINDOW_CLOSED or 'Cancelar'):
+                    break
+                elif evento_stat == 'Visualizar':
+                    sistema.graph('2',valor_stat['ano'])
+            elif evento_est == 'Top 20 autores':
+                sistema.graph('3')
+            elif evento_est == 'Publicações de um autor':
+                layout = [
+                    [sg.Text('Autor que deseja visualizar:'),sg.Input(key = 'autor')],
+                    [sg.Button('Visualizar'), sg.Button('Cancelar')]
+                ]
+                janela_stat = sg.Window('Estatísticas', layout)
+                evento_stat, valor_stat = janela_stat.read()
+                if evento_stat in (sg.WINDOW_CLOSED or 'Cancelar'):
+                    break
+                elif evento_stat == 'Visualizar':
+                    sistema.graph('4',valor_stat['autor'])
+            elif evento_est == 'Top 20 keywords':
+                sistema.graph('5')
+            elif evento_est == 'Keywords por ano':
+                sistema.graph('6')
             janela_est.close()
     
     window.close()
