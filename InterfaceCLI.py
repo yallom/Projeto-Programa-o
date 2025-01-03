@@ -3,24 +3,23 @@ import Projeto as p
 level = (-1)
 while level != (0):
     print("""Menu de Utilizador
-      [1] Pesquisar publicações
-      [2] Listar autores
-      [3] Listar Keywords
-      [4] Criar Publicação
-      [5] Eliminar Publicação
-      [6] Guardar Ficheiro
-      [0] Fechar Menu""")
+      [1] Carregar Base de Dados
+      [2] Adicionar Publicação    
+      [3] Pesquisar Publicação
+      [4] Análise de Palavras-Chave
+      [5] Guardar base de Dados
+      [6] Editar Publicação
+      [7] Eliminar Publicação
+      [8] Listar Autores
+      [9] Estatísticas""")
+
     level = int(input("Escolha a opção: "))
     if level == 1:
-        aux = p.searchPaper(4)
-        print(aux)
+        nome = input("Insira o nome do ficheiro que pretende carregar: ")
+        p.carregaFicheiro(nome)
     elif level == 2:
-        print(p.listarauth(1))
-    elif level == 3:
-        print(p.listarkeywords("2"))
-    elif level == 4:
         abstract=input("Escreva o abstrato do artigo: ")
-        keywords=input("Escreva as palavras chave do artigo: ")
+        keywords=input("Escreva as palavras-chave do artigo: ")
         autores=[]
         nomeautor = "abc"
         aux = 1
@@ -42,7 +41,36 @@ while level != (0):
         title=input("Escreva o título do artigo: ")
         link2=input("Insira o link para o artigo: ")
         p.insPaper(abstract, keywords, autores, link1, pdf, data, title, link2)
+    elif level == 3:
+        print("""Menu de Eliminação
+      [1] Pesquisar por título
+      [2] Pesquisar por palavras-chave
+      [3] Pesquisar por data
+      [4] Pesquisar por autor
+      [5] Pesquisar por afiliação""")
+        resposta = int(input("Que opção pretende tomar: "))
+        aux = p.searchPaper(resposta)
+        print(aux)
+    elif level == 4:
+        print(p.listarkeywords("2"))
     elif level == 5:
-        p.elimPaper()
-    elif level == 6:
-        p.guardaFicheiro()
+        nome = input("Escreva o nome do ficheiro que vai guardar: ")
+        p.guardaFicheiro(f"{nome}.json", p.Paper_file)
+    elif level == 6:        
+        titulo = p.searchPaper(1)[0]["title"]
+        title = input("Deseja alterar o título do artigo? s/n: ")
+        abstract = input("Deseja alterar o abstrato do artigo? s/n: ")
+        keywords = input("Deseja alterar as palavras-chave do artigo? s/n: ")
+        authors = input("Deseja alterar os autores do artigo? s/n: ")
+        data = input("Deseja alterar a data do artigo? s/n: ")
+        p.editarPaper(titulo, title, abstract, keywords, authors, data)
+    elif level == 7:
+        titulo = input("Escreva o titulo do artigo que vai eliminar: ")
+        if p.eliminar_publicacao(titulo):
+            print(f"""O artigo "{titulo}" foi eliminado.""")
+        else:
+            print(f"""O artigo "{titulo}" não foi encontrado.""")
+    elif level == 8:
+        print(p.listarauth(1))
+    elif level == 9:
+        p.graph()

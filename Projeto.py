@@ -197,6 +197,19 @@ def searchPaper2(sublista: list, resposta: int): #função de pesquisa de artigo
     else:
         return "Nenhum ficheiro encontrado!"
 
+def eliminar_publicacao(titulo: str) -> bool:
+    #Elimina uma publicação da base de dados
+    try:
+        for pub in Paper_file:
+            if pub['title'] == titulo:
+                Paper_file.remove(pub)
+                return True
+        else: 
+            return False
+    except Exception as e:
+        print(f"Erro ao eliminar publicação: {e}")
+        return False
+
 def elimPaper():
     pesquisa = []
     print("""Menu de Eliminação
