@@ -2,6 +2,7 @@ import json
 import matplotlib.pyplot as matp
 import PySimpleGUI as sg
 from typing import Dict, List
+from textwrap import wrap
 
 
 class SistemaPubs:
@@ -117,8 +118,7 @@ class SistemaPubs:
         except Exception as e:
             print(f"Erro ao eliminar publicação: {e}")
             return {}
-
-
+        
     def eliminar_publicacao(self, titulo: str) -> bool:
         #Elimina uma publicação da base de dados
         try:
@@ -130,6 +130,74 @@ class SistemaPubs:
         except Exception as e:
             print(f"Erro ao eliminar publicação: {e}")
             return False
+
+
+    def eliminar_publicacao_interface(self):
+        layout_search = [
+            [sg.Text('Pesquisar por:')],
+            [sg.Radio('Título', 'SEARCH', key='titulo', default=True),
+            sg.Radio('Autor', 'SEARCH', key='autor'),
+            sg.Radio('Afiliação', 'SEARCH', key='afiliacao'),
+            sg.Radio('Data', 'SEARCH', key='data'),
+            sg.Radio('Keywords', 'SEARCH', key='keywords')],
+            [sg.Text('Termo de pesquisa:'), sg.Input(key='search_term')],
+            [sg.Button('Pesquisar',button_color=('white', '#2B5B84')), sg.Button('Cancelar',button_color=('white', '#2B5B84'))]
+        ]
+        
+        window_search = sg.Window('Pesquisar Publicação para Eliminar', layout_search, location=(None, None), resizable=True, finalize=True)
+        window_search.set_min_size((400, 150))
+        
+        while True:
+            event, values = window_search.read()
+            
+            if event in (sg.WIN_CLOSED, 'Cancelar'):
+                window_search.close()
+                return
+                
+            if event == 'Pesquisar':
+                criterio = next(k for k, v in values.items() if v and k in ['titulo', 'autor', 'afiliacao', 'data', 'keywords'])
+                resultados = self.pesquisar_publicacoes(criterio, values['search_term'])
+                
+                if not resultados:
+                    sg.popup('Nenhuma publicação encontrada!')
+                    continue
+                    
+                layout_results = [[sg.Text('Publicações Encontradas:', font=('Helvetica', 12, 'bold'))]]
+                for pub in resultados:
+                    title_text = f"Título: {pub['title']}\nAutores: {', '.join(a['name'] for a in pub['authors'])}"
+                    layout_results.append([
+                        sg.Multiline(title_text, size=(50, 2), disabled=True),
+                        sg.Button('Eliminar', key=f"DEL_{pub['title']}",button_color=('white', '#2B5B84'))
+                    ])
+                layout_results.append([sg.Button('Fechar',button_color=('white', '#2B5B84'))])
+                
+                scrollable_layout = [[sg.Column(layout_results, scrollable=True, vertical_scroll_only=True, size=(600, 400))]]
+                
+                window_results = sg.Window('Resultados da Pesquisa', 
+                                        scrollable_layout, 
+                                        location=(None, None),
+                                        resizable=True,
+                                        finalize=True)
+                window_results.set_min_size((650, 450))
+                
+                while True:
+                    event_res, _ = window_results.read()
+                    if event_res in (sg.WIN_CLOSED, 'Fechar'):
+                        break
+                        
+                    if event_res.startswith('DEL_'):
+                        title = event_res[4:]
+                        if sg.popup_yes_no('Tem certeza que deseja eliminar esta publicação?') == 'Yes':
+                            if self.eliminar_publicacao(title):
+                                sg.popup('Publicação eliminada com sucesso!')
+                                window_results.close()
+                                break
+                            else:
+                                sg.popup('Erro ao eliminar publicação!')
+                
+                window_results.close()
+        
+            window_search.close()
 
     def pesquisar_publicacoes(self, criterio, valor) -> List[Dict]:
         #Pesquisa publicações por diferentes critérios
@@ -181,29 +249,34 @@ class SistemaPubs:
             return resultados
 
     def analisar_autores(self, ordenacao) -> List[tuple]:
-        #Análise de autores e suas publicações
         contagem_autores = {}
         try:
-            # Conta publicações por autor
             for pub in self.publicacoes:
-                for autor in pub['authors']:
-                    nome = autor['name']
-                    if nome not in contagem_autores:
-                        contagem_autores[nome] = {'Ocorrências': 1, 'Artigos': [pub['title']]}
-                    else:
-                        contagem_autores[nome]['Ocorrências'] += 1
-                        contagem_autores[nome]['Artigos'].append(pub['title'])
+                # Verifica se 'authors' existe e é uma lista
+                if 'authors' in pub and isinstance(pub['authors'], list):
+                    for autor in pub['authors']:
+                        if isinstance(autor, dict) and 'name' in autor:
+                            nome = autor['name']
+                            if nome not in contagem_autores:
+                                contagem_autores[nome] = {'Ocorrências': 1, 'Artigos': [pub['title']]}
+                            else:
+                                contagem_autores[nome]['Ocorrências'] += 1
+                                contagem_autores[nome]['Artigos'].append(pub['title'])
+                else:
+                    print(f"Formato inválido em 'authors': {pub.get('authors')}")
 
             # Ordena conforme solicitado
             if ordenacao == "alfabetica":
                 return sorted(contagem_autores.items())
-            elif ordenacao == "frequencia":  # frequencia
+            elif ordenacao == "frequencia":
                 return sorted(contagem_autores.items(), 
                             key=lambda x: x[1]['Ocorrências'], 
                             reverse=True)
         except Exception as e:
             print(f"Erro na análise de autores: {e}")
             return []
+
+
 
     def analisar_keywords(self, ordenacao) -> List[tuple]:
         #Análise de palavras-chave e suas ocorrências
@@ -275,7 +348,6 @@ class SistemaPubs:
         
         if tipo == "3":
             listatop = self.analisar_autores("frequencia") #cria uma lista dos autores com mais publicações
-            #print(listatop)
             listatop20 = listatop[:20] #escolhe os 20 autores com mais publicações
             listatop20.reverse()
             matp.title("Distribuição de artigos por autor (Top 20)")
@@ -368,25 +440,370 @@ class SistemaPubs:
         except Exception as e:
             print(f"Erro ao exportar resultados: {e}")
             return False
+#ORIGINAL CODE
 
 def criar_interface_grafica():
-    #Cria a interface gráfica do sistema
-    sg.theme('LightGrey1')
+    sg.theme('LightBlue2')
     
-    layout_principal = [
-        [sg.Text('Sistema de Gestão de Publicações Científicas', font=('Helvetica', 20))],
-        [sg.Button('Carregar Base de Dados', size=(20, 1)), 
-         sg.Button('Guardar Base de Dados', size=(20, 1))],
-        [sg.Button('Adicionar Publicação', size=(20, 1)), 
-         sg.Button('Editar Publicação', size=(20, 1))],
-        [sg.Button('Pesquisar Publicações', size=(20, 1)), 
-         sg.Button('Listar Autores', size=(20, 1))],
-        [sg.Button('Análise de Keywords', size=(20, 1)), 
-         sg.Button('Estatísticas', size=(20, 1))],
-        [sg.Button('Sair', size=(20, 1))]
+    TITLE_FONT = ('Helvetica', 24, 'bold')
+    BUTTON_FONT = ('Helvetica', 11)
+    LABEL_FONT = ('Helvetica', 11)
+    HEADER_FONT = ('Helvetica', 14, 'bold')
+    
+    BUTTON_SIZE = (25, 2)
+    PADDING = (10, 10)
+    
+    PRIMARY_COLOR = '#2B5B84'    # Dark Blue
+    SECONDARY_COLOR = '#A5D8FF'  # Light Blue
+    WHITE = '#FFFFFF'
+    BLACK = '#000000'
+
+    title_section = [
+        [sg.Text('Sistema de Gestão de Publicações Científicas', 
+                font=TITLE_FONT, 
+                justification='center', 
+                pad=((0, 0), (20, 30)))]
     ]
     
-    return sg.Window('Sistema de Publicações', layout_principal, finalize=True)
+    button_sections = [
+        [sg.Button('Carregar Base de Dados', size=BUTTON_SIZE, font=BUTTON_FONT, pad=PADDING, button_color=(WHITE, PRIMARY_COLOR)),
+         sg.Button('Guardar Base de Dados', size=BUTTON_SIZE, font=BUTTON_FONT, pad=PADDING, button_color=(WHITE, PRIMARY_COLOR))],
+        
+        [sg.Button('Adicionar Publicação', size=BUTTON_SIZE, font=BUTTON_FONT, pad=PADDING, button_color=(BLACK, SECONDARY_COLOR)),
+         sg.Button('Editar Publicação', size=BUTTON_SIZE, font=BUTTON_FONT, pad=PADDING, button_color=(BLACK, SECONDARY_COLOR))],
+        
+        [sg.Button('Pesquisar Publicações', size=BUTTON_SIZE, font=BUTTON_FONT, pad=PADDING, button_color=(WHITE, PRIMARY_COLOR)),
+         sg.Button('Listar Autores', size=BUTTON_SIZE, font=BUTTON_FONT, pad=PADDING, button_color=(WHITE, PRIMARY_COLOR))],
+        
+        [sg.Button('Análise de Keywords', size=BUTTON_SIZE, font=BUTTON_FONT, pad=PADDING, button_color=(BLACK, SECONDARY_COLOR)),
+         sg.Button('Estatísticas', size=BUTTON_SIZE, font=BUTTON_FONT, pad=PADDING, button_color=(BLACK, SECONDARY_COLOR))],
+        
+        [sg.Button('Eliminar Publicação', size=BUTTON_SIZE, font=BUTTON_FONT, pad=PADDING, button_color=(WHITE, PRIMARY_COLOR)),
+         sg.Button('Sair', size=BUTTON_SIZE, font=BUTTON_FONT, pad=PADDING, button_color=(WHITE, PRIMARY_COLOR))]
+    ]
+    
+    layout = [
+        [sg.Column(title_section, element_justification='center', expand_x=True)],
+        [sg.HorizontalSeparator(pad=((0, 0), (0, 20)))],
+        [sg.Column(button_sections, element_justification='center', expand_x=True)]
+    ]
+    
+    window = sg.Window('Sistema de Publicações', 
+                      layout,
+                      finalize=True,
+                      size=(800, 600),
+                      resizable=True,
+                      element_justification='center')
+    window.set_min_size((700, 500))
+    
+    return window
+
+def main():
+    sistema = SistemaPubs()
+    window = criar_interface_grafica()
+    
+    while True:
+        event, values = window.read()
+        
+        if event in (sg.WIN_CLOSED, 'Sair'):
+            sistema.guardar_base_dados()
+            break
+
+        if event == 'Carregar Base de Dados':
+            layout = [
+                [sg.Text("Carregar Ficheiro", font=('Helvetica', 14, 'bold'), pad=(0, 10))],
+                [sg.Text("Nome do ficheiro:", font=('Helvetica', 11)), 
+                 sg.Input(key='Nome do ficheiro a carregar:', size=(30, 1))],
+                [sg.Button('Carregar', button_color=('white', '#2B5B84'), size=(12, 1), font=('Helvetica', 11)),
+                 sg.Button('Cancelar', button_color=('black', '#A5D8FF'), size=(12, 1), font=('Helvetica', 11))]
+            ]
+
+            janela_load = sg.Window('Carregar Publicação', layout, finalize=True, element_justification='center')
+            janela_load.set_min_size((400, 150))
+
+            while True:
+                evento_load, valores = janela_load.read()
+                if evento_load in (sg.WIN_CLOSED, 'Cancelar'):
+                    break
+                elif evento_load == "Carregar":
+                    fnome = valores['Nome do ficheiro a carregar:']
+                    if sistema.carregar_base_dados(fnome):
+                        sg.popup("Base de dados carregada com sucesso!", 
+                               title="Sucesso",
+                               font=('Helvetica', 11),
+                               button_color=('white', '#2B5B84'))
+                    else:
+                        sg.popup("Erro ao carregar a base de dados.", 
+                               title="Erro",
+                               font=('Helvetica', 11),
+                               button_color=('white', '#2B5B84'))
+            janela_load.close()
+        
+        elif event == 'Guardar Base de Dados':
+            if sistema.guardar_base_dados():
+                sg.popup("Base de dados guardada com sucesso!", 
+                        title="Sucesso",
+                        font=('Helvetica', 11),
+                        button_color=('white', '#2B5B84'))
+            else:
+                sg.popup("Erro ao guardar a base de dados.", 
+                        title="Erro",
+                        font=('Helvetica', 11),
+                        button_color=('white', '#2B5B84'))
+        
+        elif event == 'Adicionar Publicação':
+            layout = [
+                [sg.Text('Adicionar Nova Publicação', font=('Helvetica', 16, 'bold'), pad=(0, 20))],
+                [sg.Text('Título:', font=('Helvetica', 11, 'bold')), 
+                 sg.Input(key='titulo', size=(40, 1), font=('Helvetica', 11))],
+                [sg.Text('Resumo:', font=('Helvetica', 11, 'bold')), 
+                 sg.Multiline(key='abstract', size=(40, 5), font=('Helvetica', 11))],
+                [sg.Text('Palavras-chave:', font=('Helvetica', 11, 'bold')), 
+                 sg.Input(key='keywords', size=(40, 1), font=('Helvetica', 11))],
+                [sg.Text('Autores (JSON):', font=('Helvetica', 11, 'bold')), 
+                 sg.Multiline(key='authors', size=(40, 4), font=('Helvetica', 11))],
+                [sg.Text('DOI:', font=('Helvetica', 11, 'bold')), 
+                 sg.Input(key='doi', size=(40, 1), font=('Helvetica', 11))],
+                [sg.Text('PDF URL:', font=('Helvetica', 11, 'bold')), 
+                 sg.Input(key='pdf', size=(40, 1), font=('Helvetica', 11))],
+                [sg.Text('Data:', font=('Helvetica', 11, 'bold')), 
+                 sg.Input(key='publish_date', size=(40, 1), font=('Helvetica', 11))],
+                [sg.Text('URL:', font=('Helvetica', 11, 'bold')), 
+                 sg.Input(key='url', size=(40, 1), font=('Helvetica', 11))],
+                [sg.Button('Adicionar', button_color=('white', '#2B5B84'), size=(15, 1), font=('Helvetica', 11)),
+                 sg.Button('Cancelar', button_color=('black', '#A5D8FF'), size=(15, 1), font=('Helvetica', 11))]
+            ]
+            
+            janela_add = sg.Window('Adicionar Publicação', layout, finalize=True, element_justification='left')
+            janela_add.set_min_size((600, 600))
+            while True:
+                evento_add, valores_add = janela_add.read()
+                if evento_add in(sg.WINDOW_CLOSED, 'Cancelar'):
+                    break
+                if evento_add == 'Adicionar':
+                    try:
+                        autores = json.loads(valores_add['authors'])
+                        dados = {
+                            'title': valores_add['titulo'],
+                            'abstract': valores_add['abstract'],
+                            'keywords': valores_add['keywords'],
+                            'authors': autores,
+                            'doi': valores_add['doi'],
+                            'pdf': valores_add['pdf'],
+                            'publish_date': valores_add['publish_date'],
+                            'url': valores_add['url']
+                        }
+
+                        if sistema.criar_publicacao(dados):
+                            sg.popup("Publicação adicionada com sucesso!", 
+                                title="Sucesso",
+                                font=('Helvetica', 11),
+                                button_color=('white', '#2B5B84'))
+                            break
+                        else:
+                            sg.popup("Erro ao adicionar publicação.", 
+                                title="Erro",
+                                font=('Helvetica', 11),
+                                button_color=('white', '#2B5B84'))
+                    except Exception as e:
+                        sg.popup(f"Erro: {str(e)}", 
+                            title="Erro",
+                            font=('Helvetica', 11),
+                            button_color=('white', '#2B5B84'))
+                janela_add.close()
+
+        elif event == 'Editar Publicação':
+            layout = [
+                [sg.Text('Título da publicação:', font=('Helvetica', 11)), 
+                 sg.Input(key='title', size=(40, 1))],
+                [sg.Button('Procurar', button_color=('white', '#2B5B84'), size=(12, 1)),
+                 sg.Button('Cancelar', button_color=('black', '#A5D8FF'), size=(12, 1))]
+            ]
+            janela_edit = sg.Window('Editar Publicação', layout, finalize=True)
+            janela_edit.set_min_size((500, 100))
+
+            while True:
+                evento_edit, valores_edit = janela_edit.read()
+                if evento_edit in (sg.WIN_CLOSED, 'Cancelar'):
+                    break
+                elif evento_edit == 'Procurar':
+                    artigo = sistema.searchSpecific(valores_edit['title'])
+                    if artigo:
+                        layout_edit = [
+                            [sg.Text('Detalhes da Publicação', font=('Helvetica', 16, 'bold'), pad=(0, 20))]
+                        ]
+                        
+                        for key, value in artigo.items():
+                            layout_edit.append([
+                                sg.Text(f'{key}:', size=(12, 1), font=('Helvetica', 11, 'bold')),
+                                sg.Multiline(default_text=str(value), size=(50, 3), key=f'input_{key}',
+                                           font=('Helvetica', 11))
+                            ])
+                        
+                        layout_edit.append([
+                            sg.Button('Salvar', button_color=('white', '#2B5B84'), size=(12, 1)),
+                            sg.Button('Cancelar', button_color=('black', '#A5D8FF'), size=(12, 1))
+                        ])
+                        
+                        janela_edit_2 = sg.Window('Editar Publicação', 
+                                                [[sg.Column(layout_edit, scrollable=True, vertical_scroll_only=True)]], 
+                                                finalize=True, resizable=True)
+                        janela_edit_2.set_min_size((700, 600))
+                        
+                        while True:
+                            evento_edit_2, valores_edit_2 = janela_edit_2.read()
+                            if evento_edit_2 in (sg.WIN_CLOSED, 'Cancelar'):
+                                break
+                            elif evento_edit_2 == 'Salvar':
+                                for key in artigo:
+                                    artigo[key] = valores_edit_2[f'input_{key}']
+                                sg.popup('Alterações salvas com sucesso!',
+                                       font=('Helvetica', 11),
+                                       button_color=('white', '#2B5B84'))
+                                break
+                        janela_edit_2.close()
+                    else:
+                        sg.popup('Artigo não encontrado!',
+                               font=('Helvetica', 11),
+                               button_color=('white', '#2B5B84'))
+            janela_edit.close()
+
+        elif event == 'Pesquisar Publicações':
+            layout_pesq = [
+                [sg.Text('Critério de Pesquisa:', font=('Helvetica', 11))],
+                [sg.Combo(['titulo', 'autor', 'afiliacao', 'data', 'keywords'], 
+                         key='criterio', size=(30, 1), font=('Helvetica', 11))],
+                [sg.Text('Valor:', font=('Helvetica', 11)), 
+                 sg.Input(key='valor', size=(30, 1), font=('Helvetica', 11))],
+                [sg.Button('Pesquisar', button_color=('white', '#2B5B84'), size=(12, 1)),
+                 sg.Button('Cancelar', button_color=('black', '#A5D8FF'), size=(12, 1))]
+            ]
+            janela_pesq = sg.Window('Pesquisar Publicações', layout_pesq, finalize=True)
+            janela_pesq.set_min_size((400, 150))
+
+            while True:
+                evento_pesq, valores_pesq = janela_pesq.read()
+                if evento_pesq in (sg.WIN_CLOSED, 'Cancelar'):
+                    break
+
+                if evento_pesq == 'Pesquisar':
+                    resultados = sistema.pesquisar_publicacoes(valores_pesq['criterio'], valores_pesq['valor'])
+                    if resultados:
+                        layout_resultados = [
+                            [sg.Text('Resultados da Pesquisa:', font=('Helvetica', 14, 'bold'))],
+                            [sg.Multiline(json.dumps(resultados, ensure_ascii=False, indent=4),
+                                        size=(60, 20), disabled=True, font=('Helvetica', 11))],
+                            [sg.Button('Exportar', button_color=('white', '#2B5B84'), size=(12, 1)),
+                             sg.Button('Fechar', button_color=('black', '#A5D8FF'), size=(12, 1))]
+                        ]
+                        janela_resultados = sg.Window('Resultados de Pesquisa', layout_resultados,
+                                                    finalize=True, resizable=True)
+                        janela_resultados.set_min_size((500, 400))
+
+                        while True:
+                            evento_res, _ = janela_resultados.read()
+                            if evento_res in (sg.WINDOW_CLOSED, 'Fechar'):
+                                break
+
+def criar_interface_grafica():
+    sg.theme('LightGrey1')  # Modern, clean theme
+    
+    title_font = ('Helvetica', 24, 'bold')
+    button_font = ('Helvetica', 12, 'bold')
+    padding = (10, 10)
+    button_size = (25, 2)
+    
+    title_section = [
+        [sg.Text('Sistema de Gestão de Publicações Científicas', 
+                font=title_font, 
+                justification='center', 
+                pad=((0, 0), (20, 30)))]
+    ]
+    
+    data_section = [
+        [sg.Button('Carregar Base de Dados', 
+                  size=button_size, 
+                  font=button_font, 
+                  pad=padding,
+                  button_color=('white', '#2B5B84')),
+         sg.Button('Guardar Base de Dados', 
+                  size=button_size, 
+                  font=button_font, 
+                  pad=padding,
+                  button_color=('white', '#2B5B84'))]
+    ]
+    
+    manage_section = [
+        [sg.Button('Adicionar Publicação', 
+                  size=button_size, 
+                  font=button_font, 
+                  pad=padding,
+                  button_color=('white', '#2B5B84')),
+         sg.Button('Editar Publicação', 
+                  size=button_size, 
+                  font=button_font, 
+                  pad=padding,
+                  button_color=('white', '#2B5B84'))]
+    ]
+    
+    search_section = [
+        [sg.Button('Pesquisar Publicações', 
+                  size=button_size, 
+                  font=button_font, 
+                  pad=padding,
+                  button_color=('white', '#2B5B84')),
+         sg.Button('Listar Autores', 
+                  size=button_size, 
+                  font=button_font, 
+                  pad=padding,
+                  button_color=('white', '#2B5B84'))]
+    ]
+    
+    analysis_section = [
+        [sg.Button('Análise de Keywords', 
+                  size=button_size, 
+                  font=button_font, 
+                  pad=padding,
+                  button_color=('white', '#2B5B84')),
+         sg.Button('Estatísticas', 
+                  size=button_size, 
+                  font=button_font, 
+                  pad=padding,
+                  button_color=('white', '#2B5B84'))]
+    ]
+    
+    action_section = [
+        [sg.Button('Eliminar Publicação', 
+                  size=button_size, 
+                  font=button_font, 
+                  pad=padding,
+                  button_color=('white', '#2B5B84')),
+         sg.Button('Sair', 
+                  size=button_size, 
+                  font=button_font, 
+                  pad=padding,
+                  button_color=('white', '#2B5B84'))]
+    ]
+    
+    layout = [
+        [sg.Column(title_section, element_justification='center', expand_x=True)],
+        [sg.HorizontalSeparator(pad=((0, 0), (0, 20)))],
+        [sg.Column(data_section, element_justification='center', expand_x=True)],
+        [sg.Column(manage_section, element_justification='center', expand_x=True)],
+        [sg.Column(search_section, element_justification='center', expand_x=True)],
+        [sg.Column(analysis_section, element_justification='center', expand_x=True)],
+        [sg.Column(action_section, element_justification='center', expand_x=True)]
+    ]
+    
+    window = sg.Window('Sistema de Publicações', 
+                      layout,
+                      finalize=True,
+                      size=(800, 600),
+                      resizable=True,
+                      element_justification='center')
+    window.set_min_size((700, 500))
+    
+    return window
 
 def main():
     #Função principal que inicia o sistema
@@ -404,7 +821,7 @@ def main():
             layout = [
                 [sg.Text("Carregar Ficheiro")],
                 [sg.Input(key='Nome do ficheiro a carregar:')],
-                [sg.Button('Carregar'), sg.Button('Cancelar')]
+                [sg.Button('Carregar',button_color=('white', '#2B5B84')), sg.Button('Cancelar',button_color=('white', '#2B5B84'))]
             ]
 
             janela_load = sg.Window('Carregar Publicação', layout)
@@ -427,17 +844,18 @@ def main():
         
         elif event == 'Adicionar Publicação':
             layout = [
-                [sg.Text('Título:'), sg.Input(key='titulo')],
-                [sg.Text('Resumo:'), sg.Multiline(key='abstract')],
-                [sg.Text('Palavras-chave (separadas por vírgula):'), sg.Input(key='keywords')],
-                [sg.Text('Autores (JSON, ex: [{"name": "Autor", "affiliation": "Univ", "orcid": "0000"}]):'), sg.Multiline(key='authors')],
-                [sg.Text('DOI:'), sg.Input(key='doi')],
-                [sg.Text('PDF URL:'), sg.Input(key='pdf')],
-                [sg.Text('Data de Publicação (YYYY-MM-DD):'), sg.Input(key='publish_date')],
-                [sg.Text('URL do Artigo:'), sg.Input(key='url')],
-                [sg.Button('Adicionar'), sg.Button('Cancelar')]
+                [sg.Text('Título:', font=('Helvetica',12,'bold')), sg.Input(key='titulo',size=(20,8),expand_x=True)],
+                [sg.Text('Resumo:', font=('Helvetica',12,'bold')), sg.Multiline(key='abstract',size=(20,5),expand_x=True)],
+                [sg.Text('Palavras-chave\n (separadas por vírgula):', font=('Helvetica',12,'bold')), sg.Input(key='keywords',size=(20,8),expand_x=True)],
+                [sg.Text('Autores (JSON, \n ex: [{"name": "Autor", \n "affiliation": "Univ",\n "orcid": "0000"}]):', font=('Helvetica',12,'bold')), sg.Multiline(key='authors',size=(20,5),expand_x=True)],
+                [sg.Text('DOI:', font=('Helvetica',12,'bold')), sg.Input(key='doi',size=(20,8),expand_x=True)],
+                [sg.Text('PDF URL:', font=('Helvetica',12,'bold')), sg.Input(key='pdf',size=(20,8),expand_x=True)],
+                [sg.Text('Data de Publicação\n (YYYY-MM-DD):', font=('Helvetica',12,'bold')), sg.Input(key='publish_date',size=(20,8),expand_x=True)],
+                [sg.Text('URL do Artigo:', font=('Helvetica',12,'bold')), sg.Input(key='url',size=(20,8),expand_x=True)],
+                [sg.Button('Adicionar',button_color=('white', '#2B5B84')), sg.Button('Cancelar',button_color=('white', '#2B5B84'))]
             ]
-            janela_add = sg.Window('Adicionar Publicação', layout)
+            janela_add = sg.Window('Adicionar Publicação', layout, finalize=True, size=(800,430))
+            #janela_add.Maximize()
             evento_add, valores_add = janela_add.read()
             if evento_add == 'Adicionar':
                 try:
@@ -473,7 +891,7 @@ def main():
         elif event == 'Editar Publicação':
             layout = [
                 [sg.Text('Título da publicação que deseja editar:'), sg.Input(key='title')],
-                [sg.Button('Procurar'), sg.Button('Cancelar')]
+                [sg.Button('Procurar',button_color=('white', '#2B5B84')), sg.Button('Cancelar',button_color=('white', '#2B5B84'))]
             ]
             janela_edit = sg.Window('Editar Publicação', layout)
             while True:
@@ -491,28 +909,36 @@ def main():
                         # Criar layout dinâmico com campos editáveis para o artigo
                         layout_editar = []
 
-                        # Adiciona a tabela com os dados do artigo para exibição
-                        layout_editar.append([
-                            sg.Table(
-                                values=[[chave, artigo[chave]] for chave in artigo],  # Lista de valores no formato [chave, valor]
-                                headings=['Campo', 'Valor'],  # Cabeçalhos
-                                key='table1',
-                                auto_size_columns=True,
-                                justification='left',
-                                num_rows=len(artigo)  # Define o número de linhas da tabela
-                            )
-                        ])
+                        layout_editar.append([sg.Text()])
 
+                        for chave, valor in artigo.items():
+                            layout_editar.append([
+                                sg.Text(f'{chave.upper()}:', size=(10, 1), font=('Helvetica', 20, 'bold'), justification = 'left'),  # Key label
+                                sg.Multiline(default_text=str(valor), size=(182, 5), expand_x=True, disabled=True), sg.Stretch()  # Wrap text
+                            ])
+
+                        
+                        layout_editar.append([sg.Text()])
+                        layout_editar.append([sg.Text()])
                         # Adiciona campos de entrada editáveis
                         layout_editar.extend([
-                            [sg.Text(f"{chave}:"), sg.Input(default_text=str(valor), key=chave)]
+                            [sg.Text(f"Novo {chave}:", font=('Helvetica',12,'bold')), sg.Input(default_text=str(valor), key=f'input_{chave}', size=(30, 50), expand_x=True)]
                             for chave, valor in artigo.items()
                         ])
 
-                        # Botões de confirmação e cancelamento
-                        layout_editar.append([sg.Button('Confirmar'), sg.Button('Cancelar')])
+                        layout_editar.append([sg.Text()])
 
-                        janela_edit_2 = sg.Window('Editar Publicação', layout_editar)
+                        # Botões de confirmação e cancelamento
+                        layout_editar.append([sg.Button('Confirmar', size =(20,2), font=('Helvetica',12,'bold'),button_color=('white', '#2B5B84')), sg.Button('Cancelar', size=(20,2), font=('Helvetica',12,'bold'),button_color=('white', '#2B5B84'))])
+
+                        # Envolve o layout em um sg.Column para torná-lo scrollable
+                        scrollable_layout = [
+                            [sg.Column(layout_editar, scrollable=True, vertical_scroll_only=True, expand_x=True, expand_y=True)]  # Scrollable column
+                        ]
+
+                        # Cria a janela com o layout scrollable
+                        janela_edit_2 = sg.Window('Editar Publicação', scrollable_layout, finalize=True, resizable=True)
+                        janela_edit_2.Maximize()
                         while True:
                             evento_edit_2, valores_edit_2 = janela_edit_2.read()
                             if evento_edit_2 in (sg.WIN_CLOSED, 'Cancelar'):  # Trata fechamento ou cancelamento
@@ -520,7 +946,7 @@ def main():
                             elif evento_edit_2 == 'Confirmar':
                                 # Atualiza o artigo diretamente na base de dados
                                 for chave in valores_edit_2:
-                                    artigo[chave] = valores_edit_2[chave]
+                                    artigo[chave] = valores_edit_2.get[f'input_{chave}']
                                 sg.popup("Alterações salvas com sucesso!", title="Sucesso")
                                 break
                         janela_edit_2.close()
@@ -534,7 +960,7 @@ def main():
             layout_pesq = [
                 [sg.Text('Critério de Pesquisa:'), sg.Combo(['titulo', 'autor', 'afiliacao', 'data', 'keywords'], key='criterio')],
                 [sg.Text('Valor:'), sg.Input(key='valor')],
-                [sg.Button('Pesquisar'), sg.Button('Cancelar')]
+                [sg.Button('Pesquisar',button_color=('white', '#2B5B84')), sg.Button('Cancelar',button_color=('white', '#2B5B84'))]
             ]
             janela_pesq = sg.Window('Pesquisar Publicações', layout_pesq)
 
@@ -551,10 +977,11 @@ def main():
                         # Exibe os resultados
                         layout_resultados = [
                             [sg.Text('Resultados da Pesquisa:')],
-                            [sg.Multiline(json.dumps(resultados, ensure_ascii=False, indent=4), size=(60, 20), disabled=True)],
-                            [sg.Button('Exportar Resultados'), sg.Button('Fechar')]
+                            [sg.Multiline(json.dumps(resultados, ensure_ascii=False, indent=4), size=(60, 20), disabled=True,expand_x=True,expand_y=True)],
+                            [sg.Button('Exportar Resultados',button_color=('white', '#2B5B84')), sg.Button('Fechar',button_color=('white', '#2B5B84'))]
                         ]
-                        janela_resultados = sg.Window('Resultados de Pesquisa', layout_resultados)
+                        janela_resultados = sg.Window('Resultados de Pesquisa', layout_resultados, finalize=True)
+                        janela_resultados.Maximize()
 
                         while True:
                             evento_res, _ = janela_resultados.read()
@@ -567,7 +994,7 @@ def main():
                                 layout_exportar = [
                                     [sg.Text('Nome do arquivo para exportar os resultados:')],
                                     [sg.Input(key='fnome'), sg.FileSaveAs(file_types=(("JSON Files", "*.json"),))],
-                                    [sg.Button('Exportar'), sg.Button('Cancelar')]
+                                    [sg.Button('Exportar',button_color=('white', '#2B5B84')), sg.Button('Cancelar',button_color=('white', '#2B5B84'))]
                                 ]
                                 janela_exportar = sg.Window('Exportar Resultados', layout_exportar)
 
@@ -596,7 +1023,7 @@ def main():
         elif event == 'Listar Autores':
             layout = [
                 [sg.Text("Escolha o método de ordenação:")],
-                [sg.Button("Ordenar por ordem alfabética"), sg.Button("Ordenar por número de ocorrências"), sg.Button("Cancelar")]
+                [sg.Button("Ordenar por ordem alfabética",button_color=('white', '#2B5B84')), sg.Button("Ordenar por número de ocorrências",button_color=('white', '#2B5B84')), sg.Button("Cancelar",button_color=('white', '#2B5B84'))]
             ]
             janela_auth = sg.Window('Análise de Palavras-Chave', layout)
             
@@ -622,7 +1049,7 @@ def main():
         elif event == 'Análise de Keywords':
             layout = [
                 [sg.Text("Escolha o método de ordenação:")],
-                [sg.Button("Ordenar por ordem alfabética"), sg.Button("Ordenar por número de ocorrências"), sg.Button("Cancelar")]
+                [sg.Button("Ordenar por ordem alfabética",button_color=('white', '#2B5B84')), sg.Button("Ordenar por número de ocorrências",button_color=('white', '#2B5B84')), sg.Button("Cancelar",button_color=('white', '#2B5B84'))]
             ]
             janela_keys = sg.Window('Análise de Palavras-Chave', layout)
             
@@ -647,10 +1074,10 @@ def main():
         elif event == 'Estatísticas':
             layout = [
                 [sg.Text('Tipo de Estatística:')],
-                [sg.Button('Publicações por ano'), sg.Button('Publicações por mês, num ano')],
-                [sg.Button('Top 20 autores'), sg.Button('Publicações de um autor')],
-                [sg.Button('Top 20 keywords'), sg.Button('Keywords por ano')],
-                [sg.Button('Cancelar')]
+                [sg.Button('Publicações por ano',button_color=('white', '#2B5B84')), sg.Button('Publicações por mês, num ano',button_color=('white', '#2B5B84'))],
+                [sg.Button('Top 20 autores',button_color=('white', '#2B5B84')), sg.Button('Publicações de um autor',button_color=('white', '#2B5B84'))],
+                [sg.Button('Top 20 keywords',button_color=('white', '#2B5B84')), sg.Button('Keywords por ano',button_color=('white', '#2B5B84'))],
+                [sg.Button('Cancelar',button_color=('white', '#2B5B84'))]
             ]
             janela_est = sg.Window('Gerar Estatísticas', layout)
             evento_est, valores_est = janela_est.read()
@@ -661,7 +1088,7 @@ def main():
             elif evento_est == 'Publicações por mês, num ano':
                 layout = [
                     [sg.Text('Ano que deseja visualizar:'),sg.Input(key = 'ano')],
-                    [sg.Button('Visualizar'), sg.Button('Cancelar')]
+                    [sg.Button('Visualizar',button_color=('white', '#2B5B84')), sg.Button('Cancelar',button_color=('white', '#2B5B84'))]
                 ]
                 janela_stat = sg.Window('Estatísticas', layout)
                 evento_stat, valor_stat = janela_stat.read()
@@ -674,7 +1101,7 @@ def main():
             elif evento_est == 'Publicações de um autor':
                 layout = [
                     [sg.Text('Autor que deseja visualizar:'),sg.Input(key = 'autor')],
-                    [sg.Button('Visualizar'), sg.Button('Cancelar')]
+                    [sg.Button('Visualizar',button_color=('white', '#2B5B84')), sg.Button('Cancelar',button_color=('white', '#2B5B84'))]
                 ]
                 janela_stat = sg.Window('Estatísticas', layout)
                 evento_stat, valor_stat = janela_stat.read()
@@ -687,6 +1114,9 @@ def main():
             elif evento_est == 'Keywords por ano':
                 sistema.graph('6')
             janela_est.close()
+
+        elif event == 'Eliminar Publicação':
+            sistema.eliminar_publicacao_interface()
     
     window.close()
 
