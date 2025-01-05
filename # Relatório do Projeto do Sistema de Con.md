@@ -24,11 +24,11 @@ Imagem
 ## Conceção do Algoritmo
 ### Bibliotecas
 O primeiro passo consistiu na importação de módulos necessários para o desenvolvimento do código. Foram importados módulos em json e os, para além de módulos necessários para a criação de gráficos, criação de uma janela e manipulação de datas.
-import matplotlib.pyplot as matp: importa a biblioteca Matplotlib, que é usada para criar gráficos e visualizações em Python;
-import json: converte dicionários e listas Python em strings JSON, como o dataset se encontrava guardado em um ficheiro JSON, esta biblioteca foi usada para conseguir ler e escrever os dados das publicações;
-import os: permite aceder a funcionalidades dependentes do Sistema Operativo.
-import PySimpleGUI as sg : ajuda na criação de um layout de GUI (interface gráfica), janela, texto e botões, com Python;
-from typing import Dict, List: importa os tipos Dict (dicionário) e List (lista) do módulo typing
+* import matplotlib.pyplot as matp: importa a biblioteca Matplotlib, que é usada para criar gráficos e visualizações em Python;
+* import json: converte dicionários e listas Python em strings JSON, como o dataset se encontrava guardado em um ficheiro JSON, esta biblioteca foi usada para conseguir ler e escrever os dados das publicações;
+* import os: permite aceder a funcionalidades dependentes do Sistema Operativo.
+* import PySimpleGUI as sg : ajuda na criação de um layout de GUI (interface gráfica), janela, texto e botões, com Python;
+* from typing import Dict, List: importa os tipos Dict (dicionário) e List (lista) do módulo typing
 
 ### Linha de comandos
 Este é um programa em Python que realiza operações de gestão de tarefas através da linha de comandos. Começa-se por importar as bibliotecas necessárias, como ‘od‘, ‘json‘ e ‘matplotlib.pyplot as matp’.
@@ -84,12 +84,12 @@ imagem sem as respostas (antes de selecionar a opção)
 
 #### Estatísticas das Publicações
 O programa deve exibir estatísticas referentes às publicações presentes no conjunto de dados, apresentando gráficos para os seguintes tópicos:
-Distribuição de publicações por ano.
-Distribuição de publicações por mês de um determinado ano.
-Número de publicações por autor (top 20 autores).
-Distribuição de publicações de um autor por anos.
-Distribuição de palavras-chave pela sua frequência (top 20 palavras-chave).
-Distribuição de palavras-chave mais frequentes por ano.
+* Distribuição de publicações por ano.
+* Distribuição de publicações por mês de um determinado ano.
+* Número de publicações por autor (top 20 autores).
+* Distribuição de publicações de um autor por anos.
+* Distribuição de palavras-chave pela sua frequência (top 20 palavras-chave).
+* Distribuição de palavras-chave mais frequentes por ano.
 
 
 
